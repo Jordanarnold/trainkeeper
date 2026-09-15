@@ -77,4 +77,6 @@ type Game = {
 
 - Vision: faces clipped by the photo edge; touching tiles merging into one
   face; colour-to-number cross-check (each value has its own pip colour).
-- Hosting target (Netlify vs Vercel vs GitHub Pages) — pick at step 5.
+- Hosting: GitHub Pages, public repo github.com/Jordanarnold/trainkeeper,
+  deployed by `.github/workflows/deploy.yml` on every push to main.
+  Live at https://jordanarnold.github.io/trainkeeper/ (step 5 done 2026-09-14).
