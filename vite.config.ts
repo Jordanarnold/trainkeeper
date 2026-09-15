@@ -4,6 +4,8 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Set BASE_PATH (e.g. /trainkeeper/) when hosting under a sub-path such as GitHub Pages.
+  base: process.env.BASE_PATH ?? '/',
   plugins: [
     react(),
     VitePWA({
