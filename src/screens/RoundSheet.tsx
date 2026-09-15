@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PipCounter from '../components/PipCounter'
+import SeahawkCard, { LOGO_SRC } from '../components/SeahawkCard'
 import type { PlayerId } from '../lib/types'
 import { allDoubles, burnedDoubles, doubleLabel, suggestedDouble } from '../lib/rules'
 import { addRound, deleteRound, updateRound, useGame } from '../lib/store'
@@ -30,6 +31,7 @@ export default function RoundSheet() {
     existing?.goOutPlayerId,
   )
   const [camera, setCamera] = useState<PlayerId | undefined>()
+  const [hawk, setHawk] = useState<PlayerId | undefined>()
   const [error, setError] = useState('')
 
   if (!game) return null
@@ -38,6 +40,7 @@ export default function RoundSheet() {
   const close = () => navigate(`/game/${current.id}`)
   const burned = burnedDoubles(current, existing?.id)
   const cameraPlayer = current.players.find((p) => p.id === camera)
+  const hawkPlayer = current.players.find((p) => p.id === hawk)
 
   function setScore(playerId: PlayerId, value: string) {
     setScores((prev) => ({ ...prev, [playerId]: value }))
@@ -155,6 +158,16 @@ export default function RoundSheet() {
                   >
                     📷
                   </button>
+                  <button
+                    type="button"
+                    className="icon-btn hawk-btn"
+                    aria-label={`Seahawks who wore ${player.name}'s score`}
+                    title="Seahawks who wore this number"
+                    disabled={!isFilled(scores[player.id] ?? '')}
+                    onClick={() => setHawk(player.id)}
+                  >
+                    <img className="hawk-btn-logo" src={LOGO_SRC} alt="" />
+                  </button>
                 </div>
               )
             })}
@@ -172,6 +185,14 @@ export default function RoundSheet() {
           )}
         </div>
       </div>
+
+      {hawkPlayer && (
+        <SeahawkCard
+          score={Number(scores[hawkPlayer.id])}
+          playerName={hawkPlayer.name}
+          onClose={() => setHawk(undefined)}
+        />
+      )}
 
       {cameraPlayer && (
         <div className="pip-host">

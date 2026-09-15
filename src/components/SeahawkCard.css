@@ -1,0 +1,123 @@
+/* Seahawk jersey-number card. Sits above the round sheet (40) and below the
+   pip counter (60). */
+.hawk-host {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(28 26 22 / 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px max(16px, env(safe-area-inset-right)) 24px
+    max(16px, env(safe-area-inset-left));
+}
+
+.hawk-card {
+  background: var(--bone);
+  color: var(--ink);
+  width: 100%;
+  max-width: 400px;
+  border-radius: var(--radius);
+  padding: 16px;
+  display: grid;
+  gap: 8px;
+  box-shadow: 0 16px 40px rgb(28 26 22 / 0.3);
+  max-height: calc(100svh - 48px);
+  overflow-y: auto;
+}
+
+.hawk-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.hawk-number {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: #002244; /* Seahawks navy */
+}
+
+.hawk-close {
+  appearance: none;
+  border: 0;
+  background: var(--bone-deep);
+  color: var(--ink);
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.hawk-close:focus-visible {
+  outline: 3px solid var(--tile);
+  outline-offset: 2px;
+}
+
+.hawk-label {
+  margin: 8px 0 0;
+}
+
+.hawk {
+  background: var(--bone-deep);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  border-left: 5px solid #69be28; /* Seahawks action green */
+}
+
+.hawk-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.hawk-meta {
+  color: var(--ink-soft);
+  font-size: 13px;
+  margin-top: 2px;
+}
+
+.hawk-note {
+  font-size: 14px;
+  margin-top: 6px;
+}
+
+.hawk-empty {
+  color: var(--ink-soft);
+  font-size: 14px;
+  background: var(--bone-deep);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+
+.hawk-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.hawk-logo {
+  width: 64px;
+  height: 40px;
+  object-fit: contain;
+  flex: 0 0 auto;
+}
+
+/* The jersey button in the round sheet. */
+.hawk-btn-logo {
+  width: 36px;
+  height: 24px;
+  object-fit: contain;
+  display: block;
+}

@@ -40,6 +40,15 @@ for fast end-of-round scoring.
 5. **Pip counter** (modal) — take/choose photo, see rings and tile boxes, tap
    to add/remove pips, "Use N" fills the player's field.
 
+## Seahawks jersey lookup (added 2026-09-14)
+
+Each score field on the round sheet has a Seahawks button. It treats the score
+as a jersey number (0–99) and shows who wears it this season plus the most
+famous Seahawk to wear it since 2006. Tables live in `src/data/seahawksData.ts`
+and are hand-curated; refresh `CURRENT` (and `SEASON`) each September once the
+53-man roster settles. Retired numbers (12, 45, 80, 96) show the honoree.
+Logo: `public/Seattle-Seahawks-Logo.png`.
+
 ## Data model
 
 ```ts
