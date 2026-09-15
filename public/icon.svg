@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Trainkeeper">
+  <rect width="512" height="512" rx="96" fill="#1c1a16"/>
+  <g transform="rotate(-12 256 256)">
+    <rect x="146" y="66" width="220" height="380" rx="34" fill="#efe8d8"/>
+    <rect x="166" y="248" width="180" height="16" rx="8" fill="#5d574c"/>
+    <g fill="#18a558">
+      <circle cx="206" cy="126" r="22"/>
+      <circle cx="306" cy="126" r="22"/>
+      <circle cx="206" cy="196" r="22"/>
+      <circle cx="306" cy="196" r="22"/>
+    </g>
+    <g fill="#2f6fd0">
+      <circle cx="206" cy="316" r="22"/>
+      <circle cx="306" cy="316" r="22"/>
+      <circle cx="256" cy="366" r="22"/>
+    </g>
+  </g>
+</svg>

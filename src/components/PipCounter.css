@@ -1,0 +1,232 @@
+/* Pip counter modal. Colours come from the app's :root tokens, with the
+   prototype's values as fallbacks so this renders standalone too. */
+.pc-root {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--bone, #efe8d8);
+  color: var(--ink, #1c1a16);
+  font: 16px/1.4 -apple-system, 'SF Pro Rounded', ui-rounded, system-ui, sans-serif;
+  text-align: left;
+  padding: max(12px, env(safe-area-inset-top)) 14px
+    calc(84px + max(20px, env(safe-area-inset-bottom)));
+  overscroll-behavior: contain;
+}
+.pc-root *,
+.pc-root *::before,
+.pc-root *::after {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pc-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.pc-header h2 {
+  font-size: 17px;
+  font-weight: 600;
+  margin: 0;
+  letter-spacing: -0.01em;
+  color: var(--ink, #1c1a16);
+}
+.pc-dims {
+  font-size: 13px;
+  color: var(--ink-soft, #5d574c);
+  margin-left: auto;
+}
+.pc-close {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: var(--ink, #1c1a16);
+  font: inherit;
+  font-size: 22px;
+  line-height: 1;
+  padding: 4px 8px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.pc-close:focus-visible,
+.pc-btn:focus-visible,
+.pc-use:focus-visible {
+  outline: 3px solid var(--tile, #2f6fd0);
+  outline-offset: 2px;
+}
+
+.pc-stage {
+  position: relative;
+  width: 100%;
+  background: var(--bone-deep, #e2d9c4);
+  border-radius: 14px;
+  overflow: hidden;
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  touch-action: manipulation;
+}
+.pc-stage canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* A class selector outranks the UA rule for [hidden], so restate it. */
+.pc-stage canvas[hidden] {
+  display: none;
+}
+.pc-stage .pc-overlay {
+  position: absolute;
+  inset: 0;
+  cursor: crosshair;
+}
+.pc-empty {
+  padding: 36px 24px;
+  text-align: center;
+  color: var(--ink-soft, #5d574c);
+  font-size: 15px;
+  max-width: 30ch;
+}
+.pc-empty b {
+  display: block;
+  color: var(--ink, #1c1a16);
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pc-total {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 14px 2px 2px;
+}
+.pc-total .pc-n {
+  font-size: 56px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+  min-width: 2ch;
+  color: var(--ink, #1c1a16);
+}
+.pc-total .pc-n.pc-blank {
+  color: var(--ink-soft, #5d574c);
+}
+.pc-meta {
+  color: var(--ink-soft, #5d574c);
+  font-size: 14px;
+}
+.pc-meta div {
+  margin-top: 2px;
+}
+.pc-status {
+  font-size: 13px;
+  color: var(--alert, #c0392b);
+  margin-top: 8px;
+  min-height: 1em;
+}
+
+.pc-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+.pc-btn {
+  flex: 1;
+  appearance: none;
+  border: 0;
+  border-radius: 12px;
+  padding: 14px 12px;
+  font: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  cursor: pointer;
+  text-align: center;
+  background: var(--ink, #1c1a16);
+  color: var(--bone, #efe8d8);
+}
+.pc-btn.pc-quiet {
+  background: transparent;
+  color: var(--ink, #1c1a16);
+  box-shadow: inset 0 0 0 1.5px var(--ink, #1c1a16);
+}
+.pc-btn input {
+  display: none;
+}
+
+.pc-controls {
+  margin-top: 16px;
+  display: grid;
+  gap: 12px;
+}
+.pc-control {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+.pc-control small {
+  color: var(--ink-soft, #5d574c);
+  display: block;
+  font-size: 13px;
+}
+.pc-control input[type='range'] {
+  width: 100%;
+  grid-column: 1 / -1;
+  accent-color: var(--ink, #1c1a16);
+}
+
+.pc-hint {
+  margin: 16px 2px 0;
+  font-size: 13px;
+  color: var(--ink-soft, #5d574c);
+  line-height: 1.5;
+}
+.pc-hint kbd {
+  font: inherit;
+  color: var(--pip, #18a558);
+  font-weight: 600;
+}
+.pc-hint em {
+  color: var(--tile, #2f6fd0);
+  font-style: normal;
+  font-weight: 600;
+}
+
+.pc-footer {
+  position: sticky;
+  bottom: 0;
+  margin: 18px -14px calc(-1 * max(20px, env(safe-area-inset-bottom)));
+  padding: 12px 14px max(14px, env(safe-area-inset-bottom));
+  background: var(--bone, #efe8d8);
+  box-shadow: 0 -8px 16px -12px rgba(0, 0, 0, 0.5);
+}
+.pc-use {
+  width: 100%;
+  appearance: none;
+  border: 0;
+  border-radius: 12px;
+  padding: 16px 12px;
+  font: inherit;
+  font-weight: 700;
+  font-size: 17px;
+  cursor: pointer;
+  background: var(--pip, #18a558);
+  color: #fff;
+}
+.pc-use:disabled {
+  background: var(--bone-deep, #e2d9c4);
+  color: var(--ink-soft, #5d574c);
+  cursor: default;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pc-root * {
+    transition: none !important;
+  }
+}

@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pip counter</title>
+<style>
+  :root {
+    --bone: #efe8d8;
+    --bone-deep: #e2d9c4;
+    --ink: #1c1a16;
+    --ink-soft: #5d574c;
+    --pip: #18a558;
+    --tile: #2f6fd0;
+    --alert: #c0392b;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bone); color: var(--ink);
+    font: 16px/1.4 -apple-system, "SF Pro Rounded", ui-rounded, system-ui, sans-serif; }
+  body { padding: max(12px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom)); }
+
+  header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 10px; }
+  header h1 { font-size: 17px; font-weight: 600; margin: 0; letter-spacing: -0.01em; }
+  header span { font-size: 13px; color: var(--ink-soft); }
+
+  .stage { position: relative; width: 100%; background: var(--bone-deep); border-radius: 14px;
+    overflow: hidden; min-height: 220px; display: grid; place-items: center; touch-action: manipulation; }
+  .stage canvas { display: block; width: 100%; height: auto; }
+  #overlay { position: absolute; inset: 0; }
+  .empty { padding: 36px 24px; text-align: center; color: var(--ink-soft); font-size: 15px; max-width: 30ch; }
+  .empty b { display: block; color: var(--ink); font-weight: 600; margin-bottom: 4px; }
+
+  .total { display: flex; align-items: baseline; gap: 12px; margin: 14px 2px 2px; }
+  .total .n { font-size: 56px; font-weight: 700; line-height: 1; letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums; min-width: 2ch; }
+  .total .n:empty::before { content: "–"; color: var(--ink-soft); }
+  .total .meta { color: var(--ink-soft); font-size: 14px; }
+  .total .meta div { margin-top: 2px; }
+
+  .row { display: flex; gap: 10px; margin-top: 14px; }
+  .btn { flex: 1; appearance: none; border: 0; border-radius: 12px; padding: 14px 12px;
+    font: inherit; font-weight: 600; font-size: 16px; cursor: pointer; text-align: center;
+    background: var(--ink); color: var(--bone); }
+  .btn.quiet { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+  .btn:focus-visible { outline: 3px solid var(--tile); outline-offset: 2px; }
+  .btn input { display: none; }
+
+  .controls { margin-top: 16px; display: grid; gap: 12px; }
+  .control { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; font-size: 15px; }
+  .control small { color: var(--ink-soft); display: block; font-size: 13px; }
+  .control input[type=range] { width: 100%; grid-column: 1 / -1; accent-color: var(--ink); }
+  .switch { position: relative; width: 48px; height: 28px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch i { position: absolute; inset: 0; background: var(--bone-deep); border-radius: 14px;
+    box-shadow: inset 0 0 0 1.5px var(--ink-soft); transition: background .15s; }
+  .switch i::after { content: ""; position: absolute; top: 4px; left: 4px; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--ink); transition: transform .15s; }
+  .switch input:checked + i { background: var(--ink); box-shadow: none; }
+  .switch input:checked + i::after { background: var(--bone); transform: translateX(20px); }
+
+  .hint { margin: 16px 2px 0; font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+  .hint kbd { font: inherit; color: var(--pip); font-weight: 600; }
+  .hint em { color: var(--tile); font-style: normal; font-weight: 600; }
+  .status { font-size: 13px; color: var(--alert); margin-top: 8px; min-height: 1em; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Pip counter</h1>
+  <span id="dims"></span>
+</header>
+
+<div class="stage" id="stage">
+  <div class="empty" id="empty"><b>No photo yet</b>Shoot straight down, even light, tiles filling the frame.</div>
+  <canvas id="photo" hidden></canvas>
+  <canvas id="overlay" hidden></canvas>
+</div>
+
+<div class="total">
+  <div class="n" id="total"></div>
+  <div class="meta">
+    <div id="metaPips"></div>
+    <div id="metaGroups"></div>
+  </div>
+</div>
+<div class="status" id="status"></div>
+
+<div class="row">
+  <label class="btn">Take photo<input type="file" accept="image/*,.heic,.heif" capture="environment" id="camInput"></label>
+  <label class="btn quiet">Choose photo<input type="file" accept="image/*,.heic,.heif" id="libInput"></label>
+</div>
+
+<div class="controls">
+  <label class="control">
+    <span>Tile whiteness <small>Lower if a tile in shadow is missed; raise if glare on the table is boxed</small></span>
+    <span id="whiteVal">200</span>
+    <input type="range" id="white" min="150" max="240" value="200">
+  </label>
+</div>
+
+<p class="hint">Each counted pip gets a <kbd>green ring</kbd>; each <em>tile face</em> is boxed with its count. Tap a ring to remove a false pip, tap a bare pip to add it. The total updates as you correct.</p>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const photo = $('photo'), overlay = $('overlay');
+  const pctx = photo.getContext('2d', { willReadFrequently: true });
+  const octx = overlay.getContext('2d');
+  const MAX_DIM = 1200;
+
+  let img = null;
+  let pips = [];      // [{x, y, r, tile}]
+  let tiles = [];     // [{minX, minY, maxX, maxY}]
+  let medianD = 12;
+
+  for (const id of ['camInput', 'libInput']) {
+    $(id).addEventListener('change', e => {
+      const f = e.target.files && e.target.files[0];
+      if (f) loadFile(f);
+      e.target.value = '';
+    });
+  }
+  $('white').addEventListener('input', e => { $('whiteVal').textContent = e.target.value; });
+  $('white').addEventListener('change', () => img && analyze());
+
+  async function loadFile(file) {
+    setStatus(`Reading ${file.name || 'photo'}…`);
+    let source = null, w = 0, h = 0;
+    try {
+      const bmp = await createImageBitmap(file);
+      source = bmp; w = bmp.width; h = bmp.height;
+    } catch (e1) {
+      try {
+        const dataUrl = await new Promise((res, rej) => {
+          const r = new FileReader();
+          r.onload = () => res(r.result); r.onerror = () => rej(r.error);
+          r.readAsDataURL(file);
+        });
+        const im = await new Promise((res, rej) => {
+          const i = new Image();
+          i.onload = () => res(i); i.onerror = () => rej(new Error('img decode failed'));
+          i.src = dataUrl;
+        });
+        source = im; w = im.naturalWidth; h = im.naturalHeight;
+      } catch (e2) {
+        setStatus(`Could not decode this photo (${file.type || 'unknown type'}). ` +
+                  `If it is HEIC, set Settings → Camera → Formats to "Most Compatible" and reshoot. [${e1.message}; ${e2.message}]`);
+        return;
+      }
+    }
+    img = source;
+    const scale = Math.min(1, MAX_DIM / Math.max(w, h));
+    photo.width = overlay.width = Math.round(w * scale);
+    photo.height = overlay.height = Math.round(h * scale);
+    pctx.drawImage(source, 0, 0, photo.width, photo.height);
+    if (source.close) source.close();
+    $('empty').hidden = true; photo.hidden = false; overlay.hidden = false;
+    $('dims').textContent = `${photo.width}×${photo.height}`;
+    setStatus('');
+    analyze();
+  }
+  function setStatus(t) { $('status').textContent = t || ''; }
+
+  // ---------- Detection: find white tile faces, then count the holes in them ----------
+  function analyze() {
+    const W = photo.width, H = photo.height, N = W * H;
+    const data = pctx.getImageData(0, 0, W, H).data;
+    const WHITE = +$('white').value;
+
+    // Per-pixel brightness (max channel) and saturation.
+    const V = new Uint8Array(N), Sat = new Uint8Array(N);   // Sat in 0..255
+    for (let i = 0, j = 0; i < N; i++, j += 4) {
+      const r = data[j], g = data[j+1], b = data[j+2];
+      const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+      V[i] = mx;
+      Sat[i] = mx ? Math.round(255 * (mx - mn) / mx) : 0;
+    }
+    // Local 5×5 mean of brightness via integral image: a tile face is smooth,
+    // glare on wood is not (grain lines show through), so texture separates them.
+    const S = new Float64Array((W + 1) * (H + 1));
+    for (let y = 1; y <= H; y++) {
+      let row = 0;
+      for (let x = 1; x <= W; x++) { row += V[(y-1) * W + (x-1)]; S[y * (W+1) + x] = S[(y-1) * (W+1) + x] + row; }
+    }
+    const face = new Uint8Array(N);
+    const R = 2, TEX = 7;
+    for (let y = 0; y < H; y++) {
+      const y0 = Math.max(0, y - R), y1 = Math.min(H, y + R + 1);
+      for (let x = 0; x < W; x++) {
+        const i = y * W + x;
+        if (V[i] <= 150 || Sat[i] >= 72) continue;                 // must be pale and near-neutral
+        const x0 = Math.max(0, x - R), x1 = Math.min(W, x + R + 1);
+        const mean = (S[y1*(W+1)+x1] - S[y0*(W+1)+x1] - S[y1*(W+1)+x0] + S[y0*(W+1)+x0]) / ((y1-y0)*(x1-x0));
+        if (Math.abs(V[i] - mean) < TEX) face[i] = 1;             // and smooth
+      }
+    }
+
+    // Connected components of the face mask.
+    const label = new Int32Array(N);
+    const stack = new Int32Array(N);
+    const comps = [];
+    for (let start = 0; start < N; start++) {
+      if (!face[start] || label[start]) continue;
+      const id = comps.length + 1;
+      let sp = 0; stack[sp++] = start; label[start] = id;
+      let area = 0, minX = W, maxX = -1, minY = H, maxY = -1, sv = 0, border = false;
+      while (sp) {
+        const p = stack[--sp];
+        const x = p % W, y = (p - x) / W;
+        area++; sv += V[p];
+        if (x < minX) minX = x; if (x > maxX) maxX = x;
+        if (y < minY) minY = y; if (y > maxY) maxY = y;
+        if (x === 0 || y === 0 || x === W-1 || y === H-1) border = true;
+        if (x > 0   && face[p-1] && !label[p-1]) { label[p-1] = id; stack[sp++] = p-1; }
+        if (x < W-1 && face[p+1] && !label[p+1]) { label[p+1] = id; stack[sp++] = p+1; }
+        if (y > 0   && face[p-W] && !label[p-W]) { label[p-W] = id; stack[sp++] = p-W; }
+        if (y < H-1 && face[p+W] && !label[p+W]) { label[p+W] = id; stack[sp++] = p+W; }
+      }
+      comps.push({ id, area, minX, maxX, minY, maxY, meanV: sv / area, border });
+    }
+
+    // Keep components that look like tile faces: big enough, not clipped by the frame, really white.
+    const faces = comps.filter(c => c.area >= 0.002 * N && !c.border && c.meanV >= WHITE);
+
+    // Each face gets an oriented rectangle (PCA of its pixels). Pips are then searched
+    // inside that rectangle, so pips touching the tile edge are still enclosed.
+    const rects = faces.map(c => {
+      let n = 0, sx = 0, sy = 0;
+      for (let y = c.minY; y <= c.maxY; y++) for (let x = c.minX; x <= c.maxX; x++)
+        if (label[y * W + x] === c.id) { n++; sx += x; sy += y; }
+      const mx = sx / n, my = sy / n;
+      let sxx = 0, syy = 0, sxy = 0;
+      for (let y = c.minY; y <= c.maxY; y++) for (let x = c.minX; x <= c.maxX; x++)
+        if (label[y * W + x] === c.id) { const dx = x - mx, dy = y - my; sxx += dx*dx; syy += dy*dy; sxy += dx*dy; }
+      const th = 0.5 * Math.atan2(2 * sxy, sxx - syy);
+      const ux = Math.cos(th), uy = Math.sin(th), vx = -uy, vy = ux;
+      let u0 = Infinity, u1 = -Infinity, v0 = Infinity, v1 = -Infinity;
+      for (let y = c.minY; y <= c.maxY; y++) for (let x = c.minX; x <= c.maxX; x++)
+        if (label[y * W + x] === c.id) {
+          const dx = x - mx, dy = y - my, pu = dx*ux + dy*uy, pv = dx*vx + dy*vy;
+          if (pu < u0) u0 = pu; if (pu > u1) u1 = pu; if (pv < v0) v0 = pv; if (pv > v1) v1 = pv;
+        }
+      return { c, mx, my, ux, uy, vx, vy, u0, u1, v0, v1 };
+    });
+
+    const findPips = margin => {
+      const out = [];
+      rects.forEach((R, tileIdx) => {
+        const c = R.c, m = Math.ceil(margin);
+        const bx0 = Math.max(0, c.minX - m), by0 = Math.max(0, c.minY - m);
+        const bx1 = Math.min(W - 1, c.maxX + m), by1 = Math.min(H - 1, c.maxY + m);
+        const bw = bx1 - bx0 + 1, bh = by1 - by0 + 1;
+        // grid: 0 = pip-coloured pixel inside the tile rectangle, 1 = everything else
+        const grid = new Uint8Array(bw * bh).fill(1);
+        for (let y = 0; y < bh; y++) for (let x = 0; x < bw; x++) {
+          const gx = bx0 + x, gy = by0 + y, dx = gx - R.mx, dy = gy - R.my;
+          const pu = dx*R.ux + dy*R.uy, pv = dx*R.vx + dy*R.vy;
+          if (pu < R.u0 - margin || pu > R.u1 + margin || pv < R.v0 - margin || pv > R.v1 + margin) continue;
+          const gi = gy * W + gx;
+          if (c.meanV - V[gi] > 35 || Sat[gi] > 80) grid[y * bw + x] = 0;
+        }
+        // One step of erosion breaks thin bridges between a pip and the divider bar.
+        const er = new Uint8Array(bw * bh).fill(1);
+        for (let y = 1; y < bh - 1; y++) for (let x = 1; x < bw - 1; x++) {
+          const q = y * bw + x;
+          if (grid[q]) continue;
+          if (!grid[q-1] && !grid[q+1] && !grid[q-bw] && !grid[q+bw] &&
+              !grid[q-bw-1] && !grid[q-bw+1] && !grid[q+bw-1] && !grid[q+bw+1]) er[q] = 0;
+        }
+        const st = new Int32Array(bw * bh);
+        const maxD = 0.4 * Math.sqrt(c.area);
+        for (let q0 = 0; q0 < bw * bh; q0++) {
+          if (er[q0] !== 0) continue;
+          er[q0] = 3; let sp = 0; st[sp++] = q0;
+          let a = 0, hx0 = bw, hx1 = -1, hy0 = bh, hy1 = -1, sx = 0, sy = 0;
+          while (sp) {
+            const q = st[--sp]; const x = q % bw, y = (q - x) / bw;
+            a++; sx += x; sy += y;
+            if (x < hx0) hx0 = x; if (x > hx1) hx1 = x; if (y < hy0) hy0 = y; if (y > hy1) hy1 = y;
+            const nb = q => { if (er[q] === 0) { er[q] = 3; st[sp++] = q; } };
+            if (x > 0) nb(q - 1); if (x < bw - 1) nb(q + 1); if (y > 0) nb(q - bw); if (y < bh - 1) nb(q + bw);
+          }
+          const w2 = hx1 - hx0 + 1, h2 = hy1 - hy0 + 1, d = Math.max(w2, h2) + 2;   // +2 undoes the erosion
+          if (a < 8 || d > maxD) continue;
+          const aspect = w2 / h2;
+          if (aspect < 0.65 || aspect > 1.55) continue;          // rejects the divider bar
+          if (a / (w2 * h2) < 0.55) continue;                     // circle ≈ 0.785
+          out.push({ x: bx0 + sx / a, y: by0 + sy / a, r: d / 2, tile: tileIdx });
+        }
+      });
+      return out;
+    };
+
+    tiles = faces.map(c => ({ minX: c.minX, minY: c.minY, maxX: c.maxX, maxY: c.maxY, count: 0 }));
+    pips = findPips(0);
+    if (pips.length >= 3) {
+      const ds = pips.map(p => p.r * 2).sort((a, b) => a - b);
+      const md = ds[ds.length >> 1];
+      pips = findPips(md * 0.7);            // second pass reaches pips on the tile edge
+      for (const t of tiles) { t.minX -= md*0.7; t.minY -= md*0.7; t.maxX += md*0.7; t.maxY += md*0.7; }
+    }
+
+    // Pips across the photo are about one size; drop outliers (glare specks, chips).
+    if (pips.length >= 3) {
+      const ds = pips.map(p => p.r * 2).sort((a, b) => a - b);
+      medianD = ds[ds.length >> 1];
+      pips = pips.filter(p => p.r * 2 > medianD * 0.55 && p.r * 2 < medianD * 1.7);
+    } else if (pips.length) medianD = pips[0].r * 2;
+
+    render();
+  }
+
+  // ---------- Render ----------
+  function render() {
+    const W = overlay.width, H = overlay.height;
+    octx.clearRect(0, 0, W, H);
+    const lw = Math.max(2, W / 400);
+    for (const t of tiles) t.count = 0;
+    for (const p of pips) if (p.tile != null) tiles[p.tile].count++;
+    const shown = tiles.filter(t => t.count > 0);
+
+    octx.lineWidth = lw; octx.strokeStyle = '#2f6fd0';
+    const fs = Math.max(14, Math.round(medianD * 1.3));
+    octx.font = `bold ${fs}px -apple-system, system-ui, sans-serif`;
+    octx.textBaseline = 'top';
+    for (const t of shown) {
+      const pad = lw * 2;
+      const x = t.minX - pad, y = t.minY - pad, w = t.maxX - t.minX + 2*pad, h = t.maxY - t.minY + 2*pad;
+      octx.strokeRect(x, y, w, h);
+      const s = String(t.count), tw = octx.measureText(s).width;
+      octx.fillStyle = '#2f6fd0';
+      octx.fillRect(x, y - fs * 1.25, tw + fs * 0.6, fs * 1.25);
+      octx.fillStyle = '#fff';
+      octx.fillText(s, x + fs * 0.3, y - fs * 1.12);
+    }
+    octx.strokeStyle = '#18a558';
+    for (const p of pips) { octx.beginPath(); octx.arc(p.x, p.y, p.r + lw * 1.5, 0, Math.PI * 2); octx.stroke(); }
+
+    $('total').textContent = pips.length;
+    $('metaPips').textContent = pips.length === 1 ? 'pip counted' : 'pips counted';
+    const loose = pips.filter(p => p.tile == null).length;
+    $('metaGroups').textContent = shown.length
+      ? `${shown.length} tile face${shown.length === 1 ? '' : 's'}: ${shown.map(t => t.count).join(' + ')}` +
+        (loose ? ` (+${loose} added by hand)` : '')
+      : (pips.length ? '' : 'No white tile faces found — try lowering Tile whiteness');
+  }
+
+  // ---------- Tap to correct ----------
+  overlay.addEventListener('pointerdown', e => {
+    if (!img) return;
+    const rect = overlay.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * overlay.width / rect.width;
+    const y = (e.clientY - rect.top) * overlay.height / rect.height;
+    const hitR = Math.max(medianD, 14);
+    let best = -1, bestD = Infinity;
+    pips.forEach((p, i) => { const d = Math.hypot(p.x - x, p.y - y); if (d < hitR && d < bestD) { best = i; bestD = d; } });
+    if (best >= 0) pips.splice(best, 1);
+    else {
+      const t = tiles.findIndex(t => x >= t.minX && x <= t.maxX && y >= t.minY && y <= t.maxY);
+      pips.push({ x, y, r: medianD / 2, tile: t >= 0 ? t : null });
+    }
+    render();
+  });
+})();
+</script>
+</body>
+</html>

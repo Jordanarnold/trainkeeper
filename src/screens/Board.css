@@ -1,0 +1,128 @@
+.grid-wrap {
+  overflow: auto;
+  max-height: min(58svh, 520px);
+  border-radius: var(--radius);
+  background: var(--bone-deep);
+  -webkit-overflow-scrolling: touch;
+}
+
+.grid {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.grid th,
+.grid td {
+  padding: 10px 12px;
+  text-align: right;
+  white-space: nowrap;
+  font-size: 15px;
+  background: var(--bone-deep);
+}
+
+.grid thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-soft);
+  box-shadow: inset 0 -1.5px 0 rgb(93 87 76 / 0.25);
+}
+
+.grid tfoot th,
+.grid tfoot td {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  font-weight: 700;
+  box-shadow: inset 0 1.5px 0 rgb(93 87 76 / 0.25);
+}
+
+/* First column: the round label, pinned while the players scroll. */
+.grid .rowhead {
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink-soft);
+  box-shadow: inset -1.5px 0 0 rgb(93 87 76 / 0.18);
+}
+
+.grid thead .rowhead,
+.grid tfoot .rowhead {
+  z-index: 4;
+}
+
+.grid tbody tr {
+  cursor: pointer;
+}
+
+.grid tbody tr:hover td,
+.grid tbody tr:hover .rowhead {
+  background: #d8cdb2;
+}
+
+.grid .out {
+  color: var(--pip);
+  font-weight: 700;
+}
+
+.grid .lowest {
+  color: var(--pip);
+}
+
+.grid tfoot .lowest {
+  background: var(--pip);
+  color: var(--bone);
+}
+
+.grid-hint {
+  margin: 8px 2px 0;
+}
+
+.standings {
+  display: grid;
+  gap: 8px;
+}
+
+.standing {
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  background: var(--bone-deep);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+
+.standing .rank {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.standing.win {
+  background: var(--pip);
+  color: var(--bone);
+}
+
+.standing.win .rank {
+  color: var(--bone);
+}
+
+.standing .name {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.standing .total {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 18px;
+}
