@@ -14,6 +14,19 @@
     calc(84px + max(20px, env(safe-area-inset-bottom)));
   overscroll-behavior: contain;
 }
+/* Same status-bar band as the app shell; fixed so it stays put while the
+   modal's own content scrolls beneath the status bar. */
+.pc-root::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--bone, #efe8d8);
+  z-index: 1;
+  pointer-events: none;
+}
 .pc-root *,
 .pc-root *::before,
 .pc-root *::after {

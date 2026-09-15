@@ -36,6 +36,22 @@ body {
   min-height: 100svh;
 }
 
+/* Opaque band behind the iOS status bar. With viewport-fit=cover the page
+   extends under the status bar, and iOS 26 Safari blurs whatever scrolls
+   beneath it; a solid band the same colour as the page hides that. Sits
+   above page content and the menu, below sheets and the pip counter. */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-top, 0px);
+  background: var(--bone);
+  z-index: 30;
+  pointer-events: none;
+}
+
 h1,
 h2,
 h3,
